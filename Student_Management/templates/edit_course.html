@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Courses</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Student Management System</h1>
+            <nav class="nav">
+                <a href="/">Home</a>
+                <a href="/students">Total Students for 2025 Winter</a>
+                <a href="/edit_course">Edit Course</a>
+            </nav>
+        </header>
+
+        <!-- Add New Course -->
+        <section class="new-course-card">
+            <form method="POST" action="/edit_course">
+                <input type="text" name="course_id" placeholder="Enter Course ID" required>
+                <input type="text" name="course_name" placeholder="Enter Course Name" required>
+                <input type="text" name="professor_name" placeholder="Enter Professor Name" required>
+                <button type="submit" name="action" value="add">Add Course</button>
+            </form>
+        </section>
+
+        <!-- Course Card Design -->
+        <section class="course-grid">
+            {% for course in courses %}
+            <div class="course-card">
+                <h2>{{ course.name }}</h2>
+                <p><strong>Course ID:</strong> {{ course.id }}</p>
+                <p><strong>Professor:</strong> {{ course.professor_name }}</p>
+                <form method="POST" action="/edit_course">
+                    <input type="hidden" name="course_id" value="{{ course.id }}">
+                    <input type="text" name="course_name" placeholder="Update Course Name" value="{{ course.name }}" required>
+                    <input type="text" name="professor_name" placeholder="Update Professor Name" value="{{ course.professor_name }}" required>
+                    <button type="submit" name="action" value="update">Update</button>
+                    <button type="submit" name="action" value="delete">Delete</button>
+                </form>
+            </div>
+            {% endfor %}
+        </section>
+    </div>
+</body>
+</html>

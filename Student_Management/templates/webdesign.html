@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home</title>
+    <title>Web Design</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="container">
         <header class="header">
-            <h1>Student Management System</h1>
+            <h1>Web Design Page</h1>
             <nav class="nav">
                 <a href="/">Home</a>
                 <a href="/students">Total Students for 2025 Winter</a>
@@ -17,17 +17,8 @@
             </nav>
         </header>
         <main class="main-content">
-            <section class="course-grid">
-                {% for course in courses %}
-                <div class="course-card">
-                    <h2>{{ course.name }}</h2>
-                    <p><strong>Course ID:</strong> {{ course.id }}</p>
-                    <p><strong>Professor:</strong> {{ course.professor_name }}</p>
-                </div>
-                {% endfor %}
-            </section>
+            <p>Welcome to the Web Design Page!</p>
         </main>
     </div>
 </body>
 </html>
-
