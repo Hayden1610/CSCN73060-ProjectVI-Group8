@@ -18,7 +18,12 @@ body {
     color: white;
     padding: 15px 20px;
     border-radius: 10px;
+    margin-top: 20px;
     margin-bottom: 20px;
+}
+
+a {
+    text-decoration: none;
 }
 
 .header h1 {
@@ -44,7 +49,7 @@ body {
     background-color: rgba(255, 255, 255, 0.3);
 }
 
-.new-course-card {
+.new-form-card {
     background-color: white;
     padding: 20px;
     border-radius: 15px;
@@ -58,7 +63,7 @@ body {
     flex-wrap: wrap;
 }
 
-.new-course-card input {
+.new-form-card input {
     flex: 1;
     min-width: 200px;
     padding: 10px;
@@ -67,7 +72,7 @@ body {
     margin-bottom: 10px;
 }
 
-.new-course-card button {
+.new-form-card button {
     background-color: #007bff;
     color: white;
     padding: 10px 20px;
@@ -76,31 +81,44 @@ body {
     cursor: pointer;
 }
 
-.new-course-card button:hover {
+.new-form-card button:hover {
     background-color: #0056b3;
 }
 
-.course-grid {
+/* Common styles for both course and student grids */
+.item-grid {
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
 }
 
-.course-card {
+.item-card {
     background-color: white;
     padding: 20px;
     border-radius: 15px;
     box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
-    width: calc(50% - 10px); /* Two card 1 line */
+    width: calc(50% - 10px); /* Two cards per line */
     box-sizing: border-box;
     text-align: center;
 }
 
-.course-card h2 {
+.item-card h2 {
     margin-bottom: 10px;
 }
 
-.course-card input {
+.item-card p {
+    margin: 5px 0;
+}
+
+.item-card select {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.item-card input {
     width: calc(100% - 20px);
     margin-bottom: 10px;
     padding: 10px;
@@ -108,7 +126,7 @@ body {
     border-radius: 5px;
 }
 
-.course-card button {
+.item-card button {
     background-color: #007bff;
     color: white;
     padding: 10px 20px;
@@ -117,6 +135,155 @@ body {
     cursor: pointer;
 }
 
-.course-card button:hover {
+.item-card button:hover {
+    background-color: #0056b3;
+}
+
+
+.student-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.student-card {
+    background-color: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    width: calc(50% - 10px); /* Two cards per line */
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.student-card h2 {
+    margin-bottom: 10px;
+}
+
+.student-card input {
+    width: calc(100% - 20px);
+    margin-bottom: 10px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.student-card button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.student-card button:hover {
+    background-color: #0056b3;
+}
+
+.course-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.course-card {
+    background-color: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    transition: transform 0.2s;
+}
+
+.course-card:hover {
+    transform: translateY(-5px);
+    cursor: pointer;
+}
+
+.course-info {
+    margin: 15px 0;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+.student-list {
+    margin-top: 15px;
+}
+
+.student-list h3 {
+    color: #333;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+}
+
+.student-list ul {
+    list-style: none;
+    padding: 0;
+}
+
+.student-list li {
+    padding: 5px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.stats {
+    display: flex;
+    justify-content: center;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 10px 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 14px;
+}
+
+.nav a.active {
+    background-color: #007bff;
+    color: white;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+select.form-control {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: white;
+    margin-bottom: 10px;
+}
+
+.btn-assign {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.2s;
+}
+
+.btn-assign:hover {
     background-color: #0056b3;
 }

@@ -1,11 +1,65 @@
-from flask import render_template, request, redirect, flash
-from models import Course, db
+from flask import render_template, request, redirect, flash, jsonify
+from models import Course, Student, db
+from sqlalchemy import or_
 
 def init_app(app):
     @app.route('/')
     def home():
+        students = Student.query.all()
         courses = Course.query.all()
-        return render_template('index.html', courses=courses)
+        return render_template('index.html', students=students, courses=courses)
+
+    @app.route('/students')
+    def student_list():
+        # Get query parameters for sorting, filtering, and pagination
+        sort_by = request.args.get('sort_by', 'id')
+        search_query = request.args.get('search', '')
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+
+        # Base query
+        query = Student.query
+
+        # Apply search filter
+        if search_query:
+            query = query.filter(or_(
+                Student.name.ilike(f'%{search_query}%'),
+                Student.email.ilike(f'%{search_query}%')
+            ))
+
+        # Apply sorting
+        if sort_by == 'name':
+            query = query.order_by(Student.name.asc())
+        else:
+            query = query.order_by(Student.id.asc())
+
+        # Apply pagination
+        paginated_students = query.paginate(page=page, per_page=per_page, error_out=False)
+        
+        # Get all courses for the dropdown
+        courses = Course.query.all()
+
+        return render_template('student_list.html', students=paginated_students.items, courses=courses, active_page='students')
+    
+    @app.route('/assign_course', methods=['POST'])
+    def assign_course():
+        student_id = request.form.get('student_id')
+        course_id = request.form.get('course_id')
+
+        if not student_id or not course_id:
+            flash("Student ID and Course ID are required!", "danger")
+        else:
+            student = Student.query.get(student_id)
+            course = Course.query.get(course_id)
+
+            if student and course:
+                student.course_id = course.id
+                db.session.commit()
+                flash("Course assigned successfully!", "success")
+            else:
+                flash("Student or Course not found!", "danger")
+
+        return redirect('/students')
 
     @app.route('/edit_course', methods=['GET', 'POST'])
     def edit_course():
@@ -16,22 +70,18 @@ def init_app(app):
             professor_name = request.form.get('professor_name')
 
             if action == 'add':
-                # Make sure enter cant be empty
                 if not course_id or not course_name or not professor_name:
                     flash("All fields are required!", "danger")
                 else:
-                    # Check if Same Course ID
                     existing_course = Course.query.get(course_id)
                     if existing_course:
                         flash("Course ID already exists!", "danger")
                     else:
-                        # Add New Course
                         new_course = Course(id=course_id, name=course_name, professor_name=professor_name)
                         db.session.add(new_course)
                         db.session.commit()
                         flash("Course added successfully!", "success")
             elif action == 'update':
-                # Update Course Information
                 course = Course.query.get(course_id)
                 if course:
                     course.name = course_name
@@ -41,7 +91,6 @@ def init_app(app):
                 else:
                     flash("Course not found!", "danger")
             elif action == 'delete':
-                # Delete Course
                 course = Course.query.get(course_id)
                 if course:
                     db.session.delete(course)
@@ -50,7 +99,112 @@ def init_app(app):
                 else:
                     flash("Course not found!", "danger")
 
-        # Get all course update and return information back 
         courses = Course.query.all()
         return render_template('edit_course.html', courses=courses)
 
+    @app.route('/students', methods=['GET'])
+    def get_students():
+        # Get query parameters for sorting, filtering, and pagination
+        sort_by = request.args.get('sort_by', 'id')  # Default sort by 'id'
+        search_query = request.args.get('search', '')  # Search query
+        page = request.args.get('page', 1, type=int)  # Page number
+        per_page = request.args.get('per_page', 10, type=int)  # Students per page
+
+        # Base query
+        query = Student.query
+
+        # Apply search filter
+        if search_query:
+            query = query.filter(or_(
+                Student.name.ilike(f'%{search_query}%'),
+                Student.email.ilike(f'%{search_query}%')
+            ))
+
+        # Apply sorting
+        if sort_by == 'name':
+            query = query.order_by(Student.name.asc())
+        else:
+            query = query.order_by(Student.id.asc())
+
+        # Apply pagination
+        paginated_students = query.paginate(page=page, per_page=per_page, error_out=False)
+
+        # Render the template with paginated students
+        return render_template('student_list.html', students=paginated_students.items)
+
+    @app.route('/api/students', methods=['GET'])
+    def api_get_students():
+        sort_by = request.args.get('sort_by', 'id')
+        search_query = request.args.get('search', '')
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+
+        query = Student.query
+
+        if search_query:
+            query = query.filter(or_(
+                Student.name.ilike(f'%{search_query}%'),
+                Student.email.ilike(f'%{search_query}%')
+            ))
+
+        if sort_by == 'name':
+            query = query.order_by(Student.name.asc())
+        else:
+            query = query.order_by(Student.id.asc())
+
+        paginated_students = query.paginate(page=page, per_page=per_page, error_out=False)
+
+        students_data = [{
+            'id': student.id,
+            'name': student.name,
+            'email': student.email
+        } for student in paginated_students.items]
+
+        return jsonify({
+            'students': students_data,
+            'total_pages': paginated_students.pages,
+            'current_page': paginated_students.page,
+            'total_students': paginated_students.total
+        })
+    
+    @app.route('/add_delete_student', methods=['GET', 'POST'])
+    def add_delete_student():
+        if request.method == 'POST':
+            action = request.form.get('action')
+            student_id = request.form.get('id')
+            student_name = request.form.get('name')
+            student_email = request.form.get('email')
+
+            if action == 'add':
+                if not student_name or not student_email:
+                    flash("All fields are required!", "danger")
+                else:
+                    existing_student = Student.query.filter_by(email=student_email).first()
+                    if existing_student:
+                        flash("A student with this email already exists!", "danger")
+                    else:
+                        new_student = Student(name=student_name, email=student_email)
+                        db.session.add(new_student)
+                        db.session.commit()
+                        flash("Student added successfully!", "success")
+            elif action == 'update':
+                student = Student.query.get(student_id)
+                if student:
+                    student.name = student_name
+                    student.email = student_email
+                    db.session.commit()
+                    flash("Student updated successfully!", "success")
+                else:
+                    flash("Student not found!", "danger")
+            elif action == 'delete':
+                student = Student.query.get(student_id)
+                if student:
+                    db.session.delete(student)
+                    db.session.commit()
+                    flash("Student deleted successfully!", "success")
+                else:
+                    flash("Student not found!", "danger")
+
+        # Fetch all students to display on the page
+        students = Student.query.all()
+        return render_template('add_delete_student.html', students=students)

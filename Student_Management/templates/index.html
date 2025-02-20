@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home</title>
+    <title>Home Page</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -12,8 +12,9 @@
             <h1>Student Management System</h1>
             <nav class="nav">
                 <a href="/">Home</a>
-                <a href="/students">Total Students for 2025 Winter</a>
-                <a href="/edit_course">Edit Course</a>
+                <a href="/students">Student Information</a>
+                <a href="/edit_course">Add/Edit Course</a>
+                <a href="/add_delete_student">Add/Edit Student</a>
             </nav>
         </header>
         <main class="main-content">
@@ -21,13 +22,39 @@
                 {% for course in courses %}
                 <div class="course-card">
                     <h2>{{ course.name }}</h2>
-                    <p><strong>Course ID:</strong> {{ course.id }}</p>
-                    <p><strong>Professor:</strong> {{ course.professor_name }}</p>
+                    <div class="course-info">
+                        <p><strong>Course ID:</strong> {{ course.id }}</p>
+                        <p><strong>Professor:</strong> {{ course.professor_name }}</p>
+                    </div>
+                    <div class="student-list">
+                        <h3>Enrolled Students</h3>
+                        <ul>
+                            {% if course.students %}
+                                {% for student in course.students %}
+                                    <li>{{ student.name }} ({{ student.email }})</li>
+                                {% endfor %}
+                            {% else %}
+                                <li>No students enrolled yet</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    <div class="stats">
+                        <a href="/students">
+                            <div class="stat-item">
+                                <div class="stat-value">
+                                    {{ course.students|length }}</div>
+                                <div class="stat-label">Students</div>
+                            </div>
+                        </a>
+                        
+                    </div>
                 </div>
                 {% endfor %}
             </section>
         </main>
     </div>
+
+    <script src="/static/scripts.js"></script>
 </body>
 </html>
 

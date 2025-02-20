@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Students</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Student Management System</h1>
+            <nav class="nav">
+                <a href="/">Home</a>
+                <a href="/students">Student Information</a>
+                <a href="/edit_course">Add/Edit Course</a>
+                <a href="/add_delete_student">Add/Edit Student</a>
+            </nav>
+        </header>
+        <main class="main-content">
+            <!-- Add Student Form -->
+            <section class="new-form-card">
+                <h2>Add New Student</h2>
+                <form method="POST" action="/add_delete_student">
+                    <input type="text" name="name" placeholder="Enter Student Name" required>
+                    <input type="email" name="email" placeholder="Enter Student Email" required>
+                    <button type="submit" name="action" value="add">Add Student</button>
+                </form>
+            </section>
+
+            <!-- Student List with Edit/Delete Options -->
+            <section class="item-grid">
+                {% for student in students %}
+                <div class="item-card">
+                    <h2>{{ student.name }}</h2>
+                    <p><strong>Email:</strong> {{ student.email }}</p>
+                    <form method="POST" action="/add_delete_student">
+                        <input type="hidden" name="id" value="{{ student.id }}">
+                        <input type="text" name="name" placeholder="Update Student Name" value="{{ student.name }}" required>
+                        <input type="email" name="email" placeholder="Update Student Email" value="{{ student.email }}" required>
+                        <button type="submit" name="action" value="update">Update</button>
+                        <button type="submit" name="action" value="delete">Delete</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/scripts.js"></script>
+</body>
+</html>
