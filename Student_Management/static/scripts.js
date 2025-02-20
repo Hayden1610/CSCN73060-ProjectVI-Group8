@@ -119,3 +119,66 @@ document.addEventListener("DOMContentLoaded", () => {
         modal.classList.add("hidden");
     });
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+    // Function to update a student (PUT)
+    async function updateStudent(id, data) {
+        const response = await fetch(`/api/students/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return response.json();
+    }
+
+    // Function to partially update a student (PATCH)
+    async function patchStudent(id, data) {
+        const response = await fetch(`/api/students/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return response.json();
+    }
+
+    // Function to delete a student (DELETE)
+    async function deleteStudent(id) {
+        const response = await fetch(`/api/students/${id}`, {
+            method: 'DELETE',
+        });
+        return response.json();
+    }
+
+    // Function to get allowed methods for students (OPTIONS)
+    async function getStudentOptions() {
+        const response = await fetch('/api/students', {
+            method: 'OPTIONS'
+        });
+        return response.json();
+    }
+
+    // Example usage
+    const studentId = 1; // Replace with actual student ID
+    const updateData = { name: 'Updated Name', email: 'updated@example.com' };
+    const patchData = { email: 'newemail@example.com' };
+
+    // Update a student
+    updateStudent(studentId, updateData)
+        .then(data => console.log(data))
+        .catch(error => console.error(error));
+
+    // Partially update a student
+    patchStudent(studentId, patchData)
+        .then(data => console.log(data))
+        .catch(error => console.error(error));
+
+    // Delete a student
+    deleteStudent(studentId)
+        .then(data => console.log(data))
+        .catch(error => console.error(error));
+
+    // Get allowed methods for students
+    getStudentOptions()
+        .then(data => console.log(data))
+        .catch(error => console.error(error));
+});

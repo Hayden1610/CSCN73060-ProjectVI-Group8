@@ -102,6 +102,48 @@ def init_app(app):
         courses = Course.query.all()
         return render_template('edit_course.html', courses=courses)
 
+    @app.route('/api/courses/<string:id>', methods=['PUT'])
+    def update_course(id):
+        course = Course.query.get_or_404(id)
+        data = request.get_json()
+
+        if 'name' in data:
+            course.name = data['name']
+        if 'professor_name' in data:
+            course.professor_name = data['professor_name']
+
+        db.session.commit()
+        return jsonify({'message': 'Course updated successfully', 'course': {'id': course.id, 'name': course.name, 'professor_name': course.professor_name}})
+
+    @app.route('/api/courses/<string:id>', methods=['PATCH'])
+    def patch_course(id):
+        course = Course.query.get_or_404(id)
+        data = request.get_json()
+
+        if 'name' in data:
+            course.name = data['name']
+        if 'professor_name' in data:
+            course.professor_name = data['professor_name']
+
+        db.session.commit()
+        return jsonify({'message': 'Course partially updated successfully', 'course': {'id': course.id, 'name': course.name, 'professor_name': course.professor_name}})
+    
+    @app.route('/api/courses/<string:id>', methods=['DELETE'])
+    def delete_course(id):
+        course = Course.query.get_or_404(id)
+        db.session.delete(course)
+        db.session.commit()
+        return jsonify({'message': 'Course deleted successfully'})
+    
+    @app.route('/api/courses', methods=['OPTIONS'])
+    def courses_options():
+        response = jsonify({
+            'methods': ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+            'description': 'Manage courses in the system'
+        })
+        response.headers.add('Allow', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+        return response
+    
     @app.route('/students', methods=['GET'])
     def get_students():
         # Get query parameters for sorting, filtering, and pagination
@@ -166,6 +208,52 @@ def init_app(app):
             'current_page': paginated_students.page,
             'total_students': paginated_students.total
         })
+    
+    @app.route('/api/students/<int:id>', methods=['PUT'])
+    def update_student(id):
+        student = Student.query.get_or_404(id)
+        data = request.get_json()
+
+        if 'name' in data:
+            student.name = data['name']
+        if 'email' in data:
+            student.email = data['email']
+        if 'course_id' in data:
+            student.course_id = data['course_id']
+
+        db.session.commit()
+        return jsonify({'message': 'Student updated successfully', 'student': {'id': student.id, 'name': student.name, 'email': student.email}})
+    
+    @app.route('/api/students/<int:id>', methods=['PATCH'])
+    def patch_student(id):
+        student = Student.query.get_or_404(id)
+        data = request.get_json()
+
+        if 'name' in data:
+            student.name = data['name']
+        if 'email' in data:
+            student.email = data['email']
+        if 'course_id' in data:
+            student.course_id = data['course_id']
+
+        db.session.commit()
+        return jsonify({'message': 'Student partially updated successfully', 'student': {'id': student.id, 'name': student.name, 'email': student.email}})
+    
+    @app.route('/api/students/<int:id>', methods=['DELETE'])
+    def delete_student(id):
+        student = Student.query.get_or_404(id)
+        db.session.delete(student)
+        db.session.commit()
+        return jsonify({'message': 'Student deleted successfully'})
+    
+    @app.route('/api/students', methods=['OPTIONS'])
+    def students_options():
+        response = jsonify({
+            'methods': ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+            'description': 'Manage students in the system'
+        })
+        response.headers.add('Allow', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+        return response
     
     @app.route('/add_delete_student', methods=['GET', 'POST'])
     def add_delete_student():
