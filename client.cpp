@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
             std::string packet = std::to_string(aircraftId) + "," + timestampStr + "," + fuelStr + "\n";
             send(sock, packet.c_str(), (int)packet.size(), 0);
             std::cout << "[SENT] " << packet;
-            std::this_thread::sleep_for(std::chrono::milliseconds(30));
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
         }
     }
 

@@ -1,11 +1,12 @@
-﻿// Updated Server.cpp with human-readable time parsing and avg fuel calculation
-#include <iostream>
+﻿#include <iostream>
 #include <vector>
 #include <string>
 #include <thread>
 #include <mutex>
 #include <fstream>
 #include <sstream>
+#include <queue>
+#include <condition_variable>
 #include <ctime>
 #include <iomanip>
 #include <winsock2.h>
@@ -17,12 +18,16 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define DEFAULT_PORT "27015"
 #define BUFFER_SIZE 512
+#define THREAD_POOL_SIZE 8
+
+std::mutex coutMutex, dbMutex;
+
 
 struct FlightData {
-    double timestamp;  // seconds since epoch
-    std::string readableTime; // human-readable
+    double timestamp;
     double fuelRemaining;
 };
+
 
 struct AircraftRecord {
     int id;
@@ -34,7 +39,17 @@ struct AircraftRecord {
 };
 
 std::vector<AircraftRecord> aircraftDatabase;
-std::mutex dbMutex;
+
+
+void safePrint(const std::string& msg) {
+    std::lock_guard<std::mutex> lock(coutMutex);
+    std::cout << msg << std::endl;
+}
+
+
+std::queue<SOCKET> socketQueue;
+std::condition_variable socketAvailable;
+std::mutex queueMutex;
 
 int findAircraft(int id) {
     for (int i = 0; i < aircraftDatabase.size(); i++) {
@@ -75,25 +90,27 @@ void saveFinalFlightData(int index) {
         time_t now = time(0);
         char buffer[32];
         ctime_s(buffer, sizeof(buffer), &now);
-        int minutes = static_cast<int>(record.totalFlightTime) / 60;
-        int seconds = static_cast<int>(record.totalFlightTime) % 60;
-
         out << "Flight ended: " << buffer;
-        out << "Total flight time: " << minutes << " minutes " << seconds << " seconds\n";
+
+        int min = static_cast<int>(record.totalFlightTime / 60);
+        int sec = static_cast<int>(record.totalFlightTime) % 60;
+
+        out << "Total flight time: " << min << " min " << sec << " sec\n";
         out << "Total fuel consumed: " << record.totalFuelConsumed << " gallons\n";
         out << "Average fuel consumption: " << record.avgFuelConsumption << " gallons/sec\n";
         out << "-----------------------------\n";
 
-        for (const auto& fd : record.flightData) {
-            out << fd.readableTime << "," << fd.fuelRemaining << ",\n";
+        for (const auto& entry : record.flightData) {
+            time_t t = static_cast<time_t>(entry.timestamp);
+            std::tm tm;
+            localtime_s(&tm, &t);
+            char timeStr[32];
+            strftime(timeStr, sizeof(timeStr), "%m_%d_%Y %H:%M:%S", &tm);
+            out << timeStr << "," << entry.fuelRemaining << ",\n";
         }
 
-        out.close();
 
-        std::cout << "Flight Summary for aircraft " << record.id << ":\n";
-        std::cout << "  Time: " << minutes << " minutes " << seconds << " seconds\n";
-        std::cout << "  Fuel: " << record.totalFuelConsumed << " gal\n";
-        std::cout << "  Avg:  " << record.avgFuelConsumption << " gal/s\n";
+        out.close();
     }
 }
 
@@ -135,19 +152,15 @@ void handleClient(SOCKET clientSocket) {
                     aircraftDatabase.push_back({ aircraftId });
                     dbIndex = aircraftDatabase.size() - 1;
                 }
-
-                FlightData fd;
-                fd.timestamp = timestamp;
-                fd.readableTime = timeStr;
-                fd.fuelRemaining = fuel;
-                aircraftDatabase[dbIndex].flightData.push_back(fd);
+                aircraftDatabase[dbIndex].flightData.push_back({ timestamp, fuel });
                 calculateFuelConsumption(dbIndex);
 
-                std::cout << "Aircraft ID: " << aircraftId
+                std::ostringstream msg;
+                msg << "Aircraft ID: " << aircraftId
                     << ", Time: " << timeStr
                     << ", Fuel: " << fuel
-                    << ", Avg: " << aircraftDatabase[dbIndex].avgFuelConsumption
-                    << std::endl;
+                    << ", Avg: " << aircraftDatabase[dbIndex].avgFuelConsumption;
+                safePrint(msg.str());
             }
             catch (...) {
                 continue;
@@ -155,7 +168,6 @@ void handleClient(SOCKET clientSocket) {
         }
     }
 
-    std::cout << "Flight ended for aircraft " << aircraftId << std::endl;
     std::lock_guard<std::mutex> lock(dbMutex);
     if (dbIndex != -1) {
         saveFinalFlightData(dbIndex);
@@ -165,44 +177,50 @@ void handleClient(SOCKET clientSocket) {
     closesocket(clientSocket);
 }
 
-int main(int argc, char* argv[]) {
+
+void workerThread() {
+    while (true) {
+        SOCKET clientSocket;
+        {
+            std::unique_lock<std::mutex> lock(queueMutex);
+            socketAvailable.wait(lock, [] { return !socketQueue.empty(); });
+            clientSocket = socketQueue.front();
+            socketQueue.pop();
+        }
+        handleClient(clientSocket);
+    }
+}
+
+int main() {
     WSADATA wsaData;
-    int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
-    if (result != 0) return 1;
+    WSAStartup(MAKEWORD(2, 2), &wsaData);
 
-    const char* port = DEFAULT_PORT;
-    if (argc > 1) port = argv[1];
-
-    struct addrinfo hints = {}, * addr = nullptr;
+    addrinfo hints = {}, * addr = nullptr;
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
     hints.ai_flags = AI_PASSIVE;
 
-    result = getaddrinfo(NULL, port, &hints, &addr);
-    if (result != 0) {
-        WSACleanup();
-        return 1;
-    }
-
+    getaddrinfo(NULL, DEFAULT_PORT, &hints, &addr);
     SOCKET listenSocket = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
-    if (listenSocket == INVALID_SOCKET) {
-        freeaddrinfo(addr);
-        WSACleanup();
-        return 1;
-    }
-
     bind(listenSocket, addr->ai_addr, (int)addr->ai_addrlen);
+    listen(listenSocket, SOMAXCONN);
     freeaddrinfo(addr);
 
-    listen(listenSocket, SOMAXCONN);
-    std::cout << "Server listening on port " << port << "..." << std::endl;
+    safePrint("Server listening on port 27015...");
+
+    
+    for (int i = 0; i < THREAD_POOL_SIZE; ++i)
+        std::thread(workerThread).detach();
 
     while (true) {
         SOCKET clientSocket = accept(listenSocket, NULL, NULL);
         if (clientSocket != INVALID_SOCKET) {
-            std::thread t(handleClient, clientSocket);
-            t.detach();
+            {
+                std::lock_guard<std::mutex> lock(queueMutex);
+                socketQueue.push(clientSocket);
+            }
+            socketAvailable.notify_one();
         }
     }
 
